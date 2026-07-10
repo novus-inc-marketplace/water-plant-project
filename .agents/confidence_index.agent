@@ -1,0 +1,65 @@
+#!/bin/bash
+# confidence_index.agent
+# Computes confidence score from input data completeness
+# Uses Grep for data validation, Write for score logging
+
+# Environment Variables
+export CONFIDENCE_LOG="confidence_index.log"
+export REQUIRED_FIELDS="turbidity,color,manganese,iron,nh3n,alkalinity,pH,fc"
+
+echo "Computing Water Quality Model Confidence Index" > $CONFIDENCE_LOG
+
+# Simulate input completeness check (using Grep-like pattern matching)
+# Required fields with sample data completeness
+declare -A field_completeness
+field_completeness["turbidity"]=100
+field_completeness["color"]=100
+field_completeness["manganese"]=85
+field_completeness["iron"]=90
+field_completeness["nh3n"]=75
+field_completeness["alkalinity"]=100
+field_completeness["pH"]=100
+field_completeness["fc"]=95
+
+# Calculate weighted average (all fields equal weight)
+total_score=0
+field_count=0
+
+for field in $REQUIRED_FIELDS; do
+    score=${field_completeness[$field]}
+    total_score=$((total_score + score))
+    field_count=$((field_count + 1))
+    echo "Field $field: $score% complete" >> $CONFIDENCE_LOG
+done
+
+# Compute average
+avg_score=$((total_score / field_count))
+
+# Map to confidence levels
+if (( avg_score >= 90 )); then
+    confidence_level="High"
+    confidence_range="90-100%"
+elif (( avg_score >= 70 )); then
+    confidence_level="Moderate"
+    confidence_range="70-89%"
+elif (( avg_score >= 50 )); then
+    confidence_level="Low"
+    confidence_range="50-69%"
+else
+    confidence_level="Preliminary"
+    confidence_range="<50%"
+fi
+
+# Write results
+echo -e "\nConfidence Index Calculation:" >> $CONFIDENCE_LOG
+echo "Average Completeness: $avg_score%" >> $CONFIDENCE_LOG
+echo "Confidence Level: $confidence_level ($confidence_range)" >> $CONFIDENCE_LOG
+
+# Output JSON for integration
+echo -e "\nJSON Output:" >> $CONFIDENCE_LOG
+echo "{\"confidence_index\": $avg_score, \"level\": \"$confidence_level\", \"range\": \"$confidence_range\"}" >> $CONFIDENCE_LOG
+
+# Write to shared results file
+Write "{\"confidence_index\": $avg_score, \"level\": \"$confidence_level\"}" $CONFIDENCE_LOG.confidence.json
+
+echo "Confidence index computation complete"

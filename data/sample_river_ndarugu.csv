@@ -1,0 +1,8 @@
+scenario,season,turbidity,iron,manganese,ph,ammonia,color,notes
+High Flow Rainy,High Flow,85.2,0.15,0.08,6.8,1.2,35.5,"Typical rainy season values"
+High Flow Storm,High Flow,150.5,0.22,0.12,6.6,2.1,68.3,"Heavy rainfall event"
+Low Flow Dry,Low Flow,12.8,0.05,0.25,7.4,0.3,8.2,"Dry season conditions"
+Low Flow Groundwater,Low Flow,8.5,0.08,0.42,7.8,0.2,5.1,"Groundwater influence"
+Very High Turbidity,Edge Case,250.0,0.30,0.15,6.5,1.8,45.0,"Extreme for testing limits"
+Very Low pH,Edge Case,25.0,0.10,0.10,5.0,0.5,10.0,"Acidic conditions test"
+Low Iron,Edge Case,15.0,0.02,0.10,7.2,0.8,20.0,"Low iron concentration test"

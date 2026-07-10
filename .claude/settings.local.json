@@ -1,0 +1,13 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "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",
+    "ANTHROPIC_API_KEY": ""
+  },
+  "permissions": {
+    "allow": [
+      "Bash(C:x5cUsersx5cansonDesktopgitwater_plant_prject)",
+      "Bash(python -m uvicorn src.main:app --reload --port 8000)"
+    ]
+  }
+}
