@@ -1,0 +1,12 @@
+# Render configuration (Infrastructure as Code)
+# Usage: `render deploy --config render.yaml` (requires `brew install render`)
+# Or simply use the Render dashboard UI.
+services:
+  - type: web
+    name: water-quality-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    # Region: oregon | frankfurt | san-jose | ashburn | singapore
+    region: oregon

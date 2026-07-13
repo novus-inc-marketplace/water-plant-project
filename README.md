@@ -73,13 +73,20 @@ water_plant_project/
 
 ---
 
-## 🚀 Deployment (Vercel)
+## 🚀 Deployment (Vercel + Render)
 
 1. Push to GitHub
 2. Connect repository to Vercel
 3. Set build command: `npm run build` (in frontend/)
 4. Set output directory: `dist`
-5. Backend deploys automatically via Render integration
+5. Render backend automatically deploys from the same repo (Docker image built from `Dockerfile`)
+   - On Render: create a **Web Service** → use branch `main`, start with `uvicorn src.main:app --host 0.0.0.0 --port 8000`
+   - Vercel will proxy all `/api/*` requests to the Render backend via a client-side rewrite.
+6. After Render is live, the rendering frontend will show:
+   - Visual water‑quality form and **Calculate** button
+   - Modern **Audit Trail** toggle with step‑by‑step calculation details
+   - Styled **dosage summary** card (Alum / Soda Ash / Chlorine)
+   - Dashboard **charts** and **export** actions
 
 ---
 
