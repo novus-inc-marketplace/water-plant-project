@@ -184,31 +184,6 @@ async def export_pdf_report():
                 "confidence": confidence
             }
         })
-    season = classify_season(
-        test_input["turbidity"], test_input["color"],
-        test_input["manganese"], test_input["ammonia"]
-    )
-    dosage = calculate_dosage(
-        test_input["turbidity"], test_input["iron"], test_input["manganese"],
-        test_input["ph"], test_input["ammonia"], season
-    )
-    predicted_quality = predict_water_quality(test_input, dosage)
-    compliance = check_compliance(predicted_quality)
-    confidence = confidence_index_calculator(
-        WaterQualityInput(**test_input)
-    )
-
-    pdf_bytes = generate_pdf_report(
-        input_data=test_input,
-        dosage_data=dosage,
-        compliance_data=compliance,
-        confidence_index=confidence
-    )
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": 'attachment; filename="water_quality_report.pdf"'}
-    )
 
 @app.get("/api/export-excel")
 async def export_excel_report():
@@ -231,14 +206,27 @@ async def export_excel_report():
         WaterQualityInput(**test_input)
     )
 
-    excel_bytes = generate_excel_report(
-        input_data=test_input,
-        dosage_data=dosage,
-        compliance_data=compliance,
-        confidence_index=confidence
-    )
-    return Response(
-        content=excel_bytes,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="water_quality_report.xlsx"'}
-    )
+    try:
+        excel_bytes = generate_excel_report(
+            input_data=test_input,
+            dosage_data=dosage,
+            compliance_data=compliance,
+            confidence_index=confidence
+        )
+        return Response(
+            content=excel_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="water_quality_report.xlsx"'}
+        )
+    except Exception as e:
+        # Fallback to JSON response if report dependencies are unavailable
+        return JSONResponse({
+            "error": "Excel generation unavailable",
+            "data": {
+                "input": test_input,
+                "dosage": dosage,
+                "predicted": predicted_quality,
+                "compliance": compliance,
+                "confidence": confidence
+            }
+        })

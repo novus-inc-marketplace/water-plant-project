@@ -48,14 +48,20 @@ const formulas = {
   reliability: 'Reliability based on input completeness and data quality checks'
 };
 
+const parseNum = (v: string): number => {
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+};
+
 function Dashboard() {
-  const [formData, setFormData] = useState<WaterQualityInput>({
-    turbidity: 0,
-    iron: 0,
-    manganese: 0,
-    ph: 7.0,
-    ammonia: 0,
-    color: 0,
+  // Store raw strings so intermediate input like "0." is preserved while typing
+  const [inputs, setInputs] = useState<Record<string, string>>({
+    turbidity: '0',
+    iron: '0',
+    manganese: '0',
+    ph: '7.0',
+    ammonia: '0',
+    color: '0',
     season: 'High Flow'
   });
 
@@ -64,15 +70,22 @@ function Dashboard() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const numericValue = value === '' ? 0 : parseFloat(value) || 0;
-    setFormData(prev => ({
-      ...prev,
-      [name]: numericValue
-    }));
+    // Keep the raw string so zeros and decimals (e.g. 0.5) work correctly
+    setInputs(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSeasonChange = (season: string) => {
-    setFormData(prev => ({ ...prev, season }));
+    setInputs(prev => ({ ...prev, season }));
+  };
+
+  const parsed: WaterQualityInput = {
+    turbidity: parseNum(inputs.turbidity),
+    iron: parseNum(inputs.iron),
+    manganese: parseNum(inputs.manganese),
+    ph: parseNum(inputs.ph),
+    ammonia: parseNum(inputs.ammonia),
+    color: parseNum(inputs.color),
+    season: inputs.season
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,7 +96,7 @@ function Dashboard() {
       const response = await fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(parsed)
       });
 
       if (!response.ok) throw new Error('Calculation failed');
@@ -152,13 +165,13 @@ function Dashboard() {
                   type="number"
                   id="turbidity"
                   name="turbidity"
-                  value={formData.turbidity === 0 ? '' : formData.turbidity}
+                  value={inputs.turbidity}
                   onChange={handleChange}
                   min="0"
                   step="any"
                   placeholder="e.g., 85.2"
                 />
-                {formData.turbidity === 0 && <span className="input-note">(water clarity baseline)</span>}
+                {parseNum(inputs.turbidity) === 0 && <span className="input-note">(water clarity baseline)</span>}
               </div>
               <div className="form-group">
                 <label htmlFor="iron">Iron (mg/L)</label>
@@ -166,7 +179,7 @@ function Dashboard() {
                   type="number"
                   id="iron"
                   name="iron"
-                  value={formData.iron === 0 ? '' : formData.iron}
+                  value={inputs.iron}
                   onChange={handleChange}
                   min="0"
                   step="any"
@@ -179,7 +192,7 @@ function Dashboard() {
                   type="number"
                   id="manganese"
                   name="manganese"
-                  value={formData.manganese === 0 ? '' : formData.manganese}
+                  value={inputs.manganese}
                   onChange={handleChange}
                   min="0"
                   step="any"
@@ -192,7 +205,7 @@ function Dashboard() {
                   type="number"
                   id="ph"
                   name="ph"
-                  value={formData.ph === 7.0 ? '' : formData.ph}
+                  value={inputs.ph}
                   onChange={handleChange}
                   min="0"
                   max="14"
@@ -206,7 +219,7 @@ function Dashboard() {
                   type="number"
                   id="ammonia"
                   name="ammonia"
-                  value={formData.ammonia === 0 ? '' : formData.ammonia}
+                  value={inputs.ammonia}
                   onChange={handleChange}
                   min="0"
                   step="any"
@@ -219,7 +232,7 @@ function Dashboard() {
                   type="number"
                   id="color"
                   name="color"
-                  value={formData.color === 0 ? '' : formData.color}
+                  value={inputs.color}
                   onChange={handleChange}
                   min="0"
                   step="any"
@@ -228,7 +241,7 @@ function Dashboard() {
               </div>
               <div className="form-group seasonal-group">
                 <label htmlFor="season">Seasonal Mode</label>
-                <SeasonalSelector value={formData.season} onChange={handleSeasonChange} />
+                <SeasonalSelector value={inputs.season} onChange={handleSeasonChange} />
               </div>
             </div>
 
@@ -255,6 +268,32 @@ function Dashboard() {
               <button onClick={handleExportPDF}>Export PDF</button>
               <button onClick={handleExportExcel}>Export Excel</button>
             </div>
+
+            <div className="dosage-summary">
+              <div className="summary-title">💧 Calculated Dosage Summary</div>
+              <div className="dosage-stat">
+                <div className="stat-label">Alum</div>
+                <div className="stat-value">{results.alum_dose.toFixed(2)} <span className="stat-unit">mg/L</span></div>
+              </div>
+              <div className="dosage-stat">
+                <div className="stat-label">Soda Ash</div>
+                <div className="stat-value">{results.soda_ash_dose.toFixed(2)} <span className="stat-unit">mg/L</span></div>
+              </div>
+              <div className="dosage-stat">
+                <div className="stat-label">Chlorine</div>
+                <div className="stat-value">{results.chlorine_dose.toFixed(2)} <span className="stat-unit">mg/L</span></div>
+              </div>
+              <div className="dosage-stat">
+                <div className="stat-label">Compliance</div>
+                <div
+                  className="stat-value"
+                  style={{ color: results.compliance_status === 'PASS' ? 'var(--success)' : 'var(--danger)' }}
+                >
+                  {results.compliance_status}
+                </div>
+              </div>
+            </div>
+
             <ChartContainer data={results} />
             <ComplianceDashboard
               complianceStatus={results.compliance_status}
@@ -274,7 +313,7 @@ function Dashboard() {
                 `Historical accuracy: ${results.confidence_index >= 70 ? 'Validated' : 'Preliminary'}`
               ]}
             />
-            <AuditTrail formData={formData} results={results} />
+            <AuditTrail formData={parsed} results={results} />
           </div>
         )}
       </main>

@@ -6,6 +6,8 @@ import {
   Line,
   PieChart,
   Pie,
+  RadarChart,
+  Radar,
   ResponsiveContainer,
   Tooltip,
   CartesianGrid,
@@ -196,10 +198,17 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
         <div className="chart-section">
           <h3>Compliance Status Radar</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <RadarChart>
+            <RadarChart data={complianceRadarData} outerRadius="80%">
               <PolarGrid />
               <PolarAngleAxis dataKey="subject" />
               <PolarRadiusAxis domain={[0, 100]} />
+              <Radar
+                name="Compliance"
+                dataKey="value"
+                stroke={COLORS.primary}
+                fill={COLORS.primary}
+                fillOpacity={0.6}
+              />
               <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '8px' }}>
                 {(props) => {
                   const entry = complianceRadarData.find(r => r.subject === props.activePayload?.subject);
@@ -224,7 +233,6 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
                 }}
               </Tooltip>
               <Legend verticalAlign="top" height={36} />
-              <Cell fill={COLORS.primary} dataKey="value" />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -246,9 +254,10 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
                 fill="#8884d8"
                 label={(value) => `${value.name}: ${value.value}%`}
                 labelRadius={16}
-                fill="#00C49F"
               >
-                <Cell fill={(props) => (props.payload.name === 'Confidence' ? '#8884d8' : '#ECF0F1')} />
+                {confidenceData.map((entry, idx) => (
+  <Cell key={idx} fill={entry.name === 'Confidence' ? '#8884d8' : '#ECF0F1'} />
+))}
                 <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '8px' }}>
                   {(props) => (
                     <div style={{ fontSize: '14px' }}>

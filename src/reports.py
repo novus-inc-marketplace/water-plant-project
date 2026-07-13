@@ -11,9 +11,31 @@ try:
     from weasyprint import HTML
     import xlsxwriter
     REPORTS_AVAILABLE = True
-except ImportError:
+    EXCEL_AVAILABLE = True
+except Exception:
+    # Track availability per library so Excel can work even without WeasyPrint
     REPORTS_AVAILABLE = False
-    print("Warning: Report generation dependencies not installed. Install with: pip install jinja2 pandas weasyprint xlsxwriter")
+    EXCEL_AVAILABLE = False
+    _pdf_ok = False
+    _excel_ok = False
+    try:
+        from jinja2 import Template  # noqa: F401
+        import pandas as pd  # noqa: F401
+        from weasyprint import HTML  # noqa: F401
+        _pdf_ok = True
+    except Exception:
+        pass
+    try:
+        import xlsxwriter  # noqa: F401
+        _excel_ok = True
+    except Exception:
+        pass
+    REPORTS_AVAILABLE = _pdf_ok
+    EXCEL_AVAILABLE = _excel_ok
+    if not REPORTS_AVAILABLE:
+        print("Warning: PDF report generation unavailable (WeasyPrint native libraries missing).")
+    if not EXCEL_AVAILABLE:
+        print("Warning: Excel report generation unavailable. Install with: pip install xlsxwriter")
 
 def generate_pdf_report(
     input_data: Dict[str, Any],
@@ -182,8 +204,8 @@ def generate_excel_report(
     Returns:
         Excel report as bytes
     """
-    if not REPORTS_AVAILABLE:
-        raise ImportError("Report generation dependencies not available")
+    if not EXCEL_AVAILABLE:
+        raise ImportError("Excel report dependencies (xlsxwriter) not available")
 
     # Create Excel workbook in memory
     output = io.BytesIO()

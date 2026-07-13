@@ -111,12 +111,14 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ formData, results }) => 
       <button
         className="audit-toggle"
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls="audit-content"
       >
         {isOpen ? '▼' : '▶'} Audit Trail & Calculation Steps
       </button>
 
       {isOpen && (
-        <div className="audit-content">
+        <div className="audit-content" id="audit-content">
           <div className="audit-header">
             <h4>Calculation Audit Trail</h4>
             <button onClick={handleCopy} className="copy-btn">

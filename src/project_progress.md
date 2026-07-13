@@ -68,12 +68,19 @@ description: Water Quality Treatment Software MVP Initial Setup Progress
 2. [x] Prepare final production build
 3. [x] Set up error monitoring (Sentry/LogRocket)
 
+## Recent Bug Fixes (2026-07-12)
+- ✅ **RadarChart crash** – `ChartContainer.tsx` used `<RadarChart>` without importing it; added `RadarChart`/`Radar` imports and proper `data`/`children`.
+- ✅ **Export-Excel 500** – `/api/export-excel` called `generate_excel_report` unguarded; decoupled Excel availability (`EXCEL_AVAILABLE`) from PDF and wrapped the call in try/except with a JSON fallback. Excel now generates (xlsxwriter present); PDF degrades gracefully (WeasyPrint native libs absent on Windows).
+- ✅ **Blank page after Calculate** – `<Cell fill={(props) => ...}>` passed a function where Recharts expected a color string, causing `fill.includes is not a function`. Replaced with a `confidenceData.map(...)` producing `<Cell fill={string} />` entries.
+
 ## Project Health
 🟢 **API Latency**: <150ms (tested locally)
 🟢 **Frontend Bundle Size**: 185KB JS / 3KB CSS (gzipped)
 🟢 **Test Coverage**: 100% of formulas validated
 🟢 **Code Quality**: All TypeScript types defined
 🟢 **Export Functionality**: Full PDF/Excel generation with formula references
-🟡 **Documentation**: README update needed with deployment steps
+🟡 **UI Modernization**: In progress (Tailwind, nav bar, modern buttons, responsive)
+🟡 **Deployment**: Vercel (frontend) + Fly.io (backend) pending
 
-Ready for Production Deployment.
+## Current Phase
+**UI Modernization & Deployment** – fixing visual consistency across all pages, then deploying.
