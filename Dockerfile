@@ -1,7 +1,19 @@
-# Dockerfile for FastAPI backend
+# ---- Stage 1: Build frontend ----
+FROM node:20-slim AS frontend-build
+
+WORKDIR /frontend
+
+# Copy package files and install dependencies
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm install
+
+# Copy frontend source and build
+COPY frontend/ ./
+RUN npm run build
+
+# ---- Stage 2: Backend ----
 FROM python:3.12-slim
 
-# Set work directory
 WORKDIR /app
 
 # Install system dependencies
@@ -13,7 +25,10 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code (only necessary subdirectories)
+# Copy built frontend assets to static directory (where backend mounts them)
+COPY --from=frontend-build /frontend/dist /app/frontend/static
+
+# Copy backend source code
 COPY src/ ./src/
 
 # Create reports directory (used by PDF/Excel generation)

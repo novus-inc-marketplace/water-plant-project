@@ -1,0 +1,21 @@
+# Node modules
+node_modules/
+frontend/node_modules
+
+# Environment variables
+.env
+
+# Build artifacts
+dist/
+frontend/dist/
+
+# Docker related
+Dockerfile
+.dockerignore
+*.log
+
+# IDE / OS files
+.vscode/
+.idea/
+*.swp
+Thumbs.db
