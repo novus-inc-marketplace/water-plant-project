@@ -38,14 +38,10 @@ interface ChemicalDosage {
   confidence_index: number;
 }
 
-// Formula definitions from Water Quality Model.pdf
-const formulas = {
-  alum: `Alum = 15 + 0.40 × Turbidity (clamped 10-150 mg/L)`,
-  soda_ash: 'Soda Ash = 1.01 × (20 - Alkalinity Remaining)',
-  chlorine: 'Cl₂ = Oxidation (0.64×Fe + 1.29×Mn) + Demand (7.6×NH3-N + 0.01×Turbidity) + Residual',
-  thermolysis: 'Total Chlorine = Oxidation + Demand + Residual',
-  hypochlorite: 'Calcium Hypochlorite = Total Cl / 0.70 (available chlorine)',
-  reliability: 'Reliability based on input completeness and data quality checks'
+// Predetermined input sets from Water Quality Model.pdf
+const PRESET_VALUES: Record<string, { turbidity: number; iron: number; manganese: number; ph: number; ammonia: number; color: number }> = {
+  'High Flow': { turbidity: 85.2, iron: 0.15, manganese: 0.08, ph: 6.8, ammonia: 1.2, color: 35.5 },
+  'Low Flow': { turbidity: 12.8, iron: 0.05, manganese: 0.25, ph: 7.4, ammonia: 0.3, color: 8.2 }
 };
 
 const parseNum = (v: string): number => {
@@ -65,6 +61,10 @@ function Dashboard() {
     season: 'High Flow'
   });
 
+  // Calculation mode: 'auto' uses predetermined High/Low Flow values, 'manual' uses typed inputs
+  const [calcMode, setCalcMode] = useState<'auto' | 'manual'>('auto');
+  const [flowCond, setFlowCond] = useState<'High Flow' | 'Low Flow'>('High Flow');
+
   const [results, setResults] = useState<ChemicalDosage | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -78,15 +78,18 @@ function Dashboard() {
     setInputs(prev => ({ ...prev, season }));
   };
 
-  const parsed: WaterQualityInput = {
-    turbidity: parseNum(inputs.turbidity),
-    iron: parseNum(inputs.iron),
-    manganese: parseNum(inputs.manganese),
-    ph: parseNum(inputs.ph),
-    ammonia: parseNum(inputs.ammonia),
-    color: parseNum(inputs.color),
-    season: inputs.season
-  };
+  const parsed: WaterQualityInput =
+    calcMode === 'auto'
+      ? { ...PRESET_VALUES[flowCond], season: flowCond }
+      : {
+          turbidity: parseNum(inputs.turbidity),
+          iron: parseNum(inputs.iron),
+          manganese: parseNum(inputs.manganese),
+          ph: parseNum(inputs.ph),
+          ammonia: parseNum(inputs.ammonia),
+          color: parseNum(inputs.color),
+          season: inputs.season
+        };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,8 +160,56 @@ function Dashboard() {
         <form onSubmit={handleSubmit} className="water-form">
           <div className="form-section">
             <h2>Water Quality Parameters</h2>
-            <p className="section-help">Enter turbidity, iron, manganese, pH, ammonia, and color values (all values are required for accurate dosing)</p>
-            <div className="form-grid">
+            <p className="section-help">Choose how to calculate: use predetermined High/Low Flow values, or enter your own parameters manually.</p>
+
+            <div className="mode-toggle">
+              <button
+                type="button"
+                className={calcMode === 'auto' ? 'active' : ''}
+                onClick={() => setCalcMode('auto')}
+              >
+                Automatic (High / Low Flow)
+              </button>
+              <button
+                type="button"
+                className={calcMode === 'manual' ? 'active' : ''}
+                onClick={() => setCalcMode('manual')}
+              >
+                Manual Entry
+              </button>
+            </div>
+
+            {calcMode === 'auto' ? (
+              <div className="form-group flow-group">
+                <label>Flow Condition</label>
+                <div className="flow-selector">
+                  <button
+                    type="button"
+                    className={flowCond === 'High Flow' ? 'active' : ''}
+                    onClick={() => setFlowCond('High Flow')}
+                  >
+                    High Flow
+                  </button>
+                  <button
+                    type="button"
+                    className={flowCond === 'Low Flow' ? 'active' : ''}
+                    onClick={() => setFlowCond('Low Flow')}
+                  >
+                    Low Flow
+                  </button>
+                </div>
+                <p className="input-note">Using predetermined values from Water Quality Model.pdf</p>
+                <div className="preset-summary">
+                  <span>Turbidity: {PRESET_VALUES[flowCond].turbidity} NTU</span>
+                  <span>Iron: {PRESET_VALUES[flowCond].iron} mg/L</span>
+                  <span>Manganese: {PRESET_VALUES[flowCond].manganese} mg/L</span>
+                  <span>pH: {PRESET_VALUES[flowCond].ph}</span>
+                  <span>Ammonia: {PRESET_VALUES[flowCond].ammonia} mg/L</span>
+                  <span>Color: {PRESET_VALUES[flowCond].color} APHA</span>
+                </div>
+              </div>
+            ) : (
+              <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="turbidity">Turbidity (NTU)</label>
                 <input
@@ -244,16 +295,7 @@ function Dashboard() {
                 <SeasonalSelector value={inputs.season} onChange={handleSeasonChange} />
               </div>
             </div>
-
-            {/* Formula Display */}
-            <div className="form-section formula-section">
-              <h2>Formula Details</h2>
-              {Object.entries(formulas).map(([key, formula]) => (
-                <div key={key} className="formula-item">
-                  <strong>{key.toUpperCase()}:</strong> {formula} <span className="formula-source">(Source: Water Quality Model.pdf)</span>
-                </div>
-              ))}
-            </div>
+            )}
           </div>
 
           <button type="submit" disabled={loading}>
