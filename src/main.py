@@ -110,7 +110,14 @@ async def calculate_chemical_dosage(water_data: WaterQualityInput):
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     """Serve the frontend index.html"""
-    index_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "index.html")
+    base = os.path.dirname(os.path.dirname(__file__))
+    # Built frontend lives in frontend/static (copied from dist by Dockerfile)
+    index_path = os.path.join(base, "frontend", "static", "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, 'r') as f:
+            return HTMLResponse(content=f.read())
+    # Fallback: check for frontend/index.html (local dev)
+    index_path = os.path.join(base, "frontend", "index.html")
     if os.path.exists(index_path):
         with open(index_path, 'r') as f:
             return HTMLResponse(content=f.read())
@@ -121,7 +128,22 @@ async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
 
 # Mount static files
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "static")), name="static")
+_base = os.path.dirname(os.path.dirname(__file__))
+_static_dir = os.path.join(_base, "frontend", "static")
+if os.path.isdir(_static_dir):
+    # Built assets are referenced as /assets/... in the HTML, so mount that too
+    app.mount("/assets", StaticFiles(directory=os.path.join(_static_dir, "assets")), name="assets")
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+
+@app.get("/{full_path:path}")
+async def spa_catch_all(full_path: str):
+    """Catch-all for client-side routing (serves index.html)."""
+    index_path = os.path.join(_base, "frontend", "static", "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, 'r') as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Water Quality Treatment Software</h1><p>API is running. Frontend not found.</p>")
 
 @app.get("/api/sample-data")
 async def get_sample_data():
