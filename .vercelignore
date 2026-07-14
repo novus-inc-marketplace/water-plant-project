@@ -1,0 +1,9 @@
+# Ignore the Python backend so Vercel does NOT auto-detect it as a
+# serverless function. The backend runs only on Render (Docker).
+requirements.txt
+src/
+fly.toml
+Dockerfile
+.dockerignore
+*.py
+__pycache__/
