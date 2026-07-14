@@ -54,13 +54,13 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
     { name: 'Chlorine', value: data.chlorine_dose, color: COLORS.accent }
   ];
 
-  // Predicted water quality data
+  // Predicted water quality data (single value per metric, with unit + WHO limit)
   const qualityData = [
-    { name: 'Turbidity', turbidity: data.predicted_turbidity, color: COLORS.primary },
-    { name: 'Iron', iron: data.predicted_iron, color: COLORS.secondary },
-    { name: 'Manganese', manganese: data.predicted_manganese, color: COLORS.accent },
-    { name: 'Ammonia', ammonia: data.predicted_ammonia, color: COLORS.info },
-    { name: 'pH', ph: data.predicted_ph, color: COLORS.danger }
+    { name: 'Turbidity', value: data.predicted_turbidity, unit: 'NTU', limit: 'WHO Limit: < 1.0 NTU (preferred)', color: COLORS.primary },
+    { name: 'Iron', value: data.predicted_iron, unit: 'mg/L', limit: 'WHO Limit: < 0.3 mg/L', color: COLORS.secondary },
+    { name: 'Manganese', value: data.predicted_manganese, unit: 'mg/L', limit: 'WHO Limit: < 0.1 mg/L', color: COLORS.accent },
+    { name: 'Ammonia', value: data.predicted_ammonia, unit: 'mg/L', limit: 'WHO Limit: < 1.5 mg/L', color: COLORS.info },
+    { name: 'pH', value: data.predicted_ph, unit: 'pH', limit: 'WHO Range: 6.5 - 8.5 pH', color: COLORS.danger }
   ];
 
   // Compliance radar chart data
@@ -77,15 +77,6 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
     { name: 'Confidence', value: data.confidence_index },
     { name: 'Remaining', value: 100 - data.confidence_index }
   ];
-
-  // Find x-axis key dynamically
-  const axisKey = ['turbidity', 'iron', 'manganese', 'ammonia', 'ph'].find(key =>
-    'turbidity' in data ||
-    'iron' in data ||
-    'manganese' in data ||
-    'ammonia' in data ||
-    'ph' in data
-  ) as string | undefined;
 
   return (
     <div className="chart-container">
@@ -104,45 +95,38 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
                   color: '#fff',
                   padding: '8px'
                 }}
-                formatter={(value: any) => {
-                  const entry = dosageData.find(d => d.name === value.name);
-                  return [
-                    <p>{value.name}</p>,
-                    <p>{value.value} mg/L</p>,
-                    <p>{entry?.formula || ''}</p>
-                  ];
-                }}
               >
-                {(props) => (
-                  <div style={{ fontSize: '12px' }}>
-                    <p>{props.activePayload?.name}</p>
-                    <p>{props.activePayload?.value} mg/L</p>
-                    {props.activePayload?.name === 'Alum' && (
-                      <p>Formula: Alum = 15 + 0.40×Turbidity (clamped 10-150 mg/L)</p>
-                    )}
-                    {props.activePayload?.name === 'Soda Ash' && (
-                      <p>Formula: Soda Ash = 1.01×(20 - Alkalinity Remaining)</p>
-                    )}
-                    {props.activePayload?.name === 'Chlorine' && (
-                      <p>Formula: Cl₂ = Oxidation + Demand + Residual</p>
-                    )}
-                  </div>
-                )}
+                {(props) => {
+                  const entry = props.activePayload?.[0]?.payload as
+                    | typeof dosageData[number]
+                    | undefined;
+                  if (!entry) return null;
+                  return (
+                    <div style={{ fontSize: '12px' }}>
+                      <p><strong>{entry.name}</strong></p>
+                      <p>{entry.value} mg/L</p>
+                    </div>
+                  );
+                }}
               </Tooltip>
               <Legend verticalAlign="top" height={36} />
-              <Bar dataKey="value" fill="#8884d8" radius={4} />
+              <Bar dataKey="value" radius={4}>
+                {dosageData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.color} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* 2. Predicted Water Quality Metrics Line Chart */}
+        {/* 2. Predicted Water Quality Metrics Bar Chart */}
         <div className="chart-section">
           <h3>Predicted Water Quality Metrics</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={qualityData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <BarChart data={qualityData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={axisKey || 'name'} />
-              <YAxis />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip
                 contentStyle={{
                   background: 'rgba(0,0,0,0.7)',
@@ -150,47 +134,27 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
                   padding: '8px'
                 }}
               >
-                {(props) => (
-                  <div style={{ fontSize: '12px' }}>
-                    <p>{props.activePayload?.name}</p>
-                    <p>
-                      {props.activePayload?.name === 'Turbidity'
-                        ? `${props.activePayload?.turbidity} NTU`
-                        : props.activePayload?.name === 'Iron'
-                        ? `${props.activePayload?.iron} mg/L`
-                        : props.activePayload?.name === 'Manganese'
-                        ? `${props.activePayload?.manganese} mg/L`
-                        : props.activePayload?.name === 'Ammonia'
-                        ? `${props.activePayload?.ammonia} mg/L`
-                        : props.activePayload?.name === 'pH'
-                        ? `${props.activePayload?.ph} pH`
-                        : ''
-                    }
-                    </p>
-                    <p>
-                      {props.activePayload?.name === 'Turbidity'
-                        ? 'WHO Limit: < 1.0 NTU (preferred)'
-                        : props.activePayload?.name === 'Iron'
-                        ? 'WHO Limit: < 0.3 mg/L'
-                        : props.activePayload?.name === 'Manganese'
-                        ? 'WHO Limit: < 0.1 mg/L'
-                        : props.activePayload?.name === 'Ammonia'
-                        ? 'WHO Limit: < 1.5 mg/L'
-                        : props.activePayload?.name === 'pH'
-                        ? 'WHO Range: 6.5 - 8.5 pH'
-                        : ''
-                    }
-                    </p>
-                  </div>
-                )}
+                {(props) => {
+                  const entry = props.activePayload?.[0]?.payload as
+                    | typeof qualityData[number]
+                    | undefined;
+                  if (!entry) return null;
+                  return (
+                    <div style={{ fontSize: '12px' }}>
+                      <p><strong>{entry.name}</strong></p>
+                      <p>{entry.value} {entry.unit}</p>
+                      <p>{entry.limit}</p>
+                    </div>
+                  );
+                }}
               </Tooltip>
               <Legend verticalAlign="top" height={36} />
-              <Line type="monotone" dataKey="turbidity" stroke={COLORS.primary} name="NTU" dot={false} />
-              <Line type="monotone" dataKey="iron" stroke={COLORS.secondary} name="Iron (mg/L)" dot={false} />
-              <Line type="monotone" dataKey="manganese" stroke={COLORS.accent} name="Manganese (mg/L)" dot={false} />
-              <Line type="monotone" dataKey="ammonia" stroke={COLORS.info} name="Ammonia (mg/L)" dot={false} />
-              <Line type="monotone" dataKey="ph" stroke={COLORS.danger} name="pH" dot={false} />
-            </LineChart>
+              <Bar dataKey="value" radius={4} label={{ position: 'top', fontSize: 11, fill: '#333' }}>
+                {qualityData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
@@ -256,8 +220,8 @@ export const ChartContainer: React.FC<Props> = ({ data }) => {
                 labelRadius={16}
               >
                 {confidenceData.map((entry, idx) => (
-  <Cell key={idx} fill={entry.name === 'Confidence' ? '#8884d8' : '#ECF0F1'} />
-))}
+                  <Cell key={idx} fill={entry.name === 'Confidence' ? '#8884d8' : '#ECF0F1'} />
+                ))}
                 <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '8px' }}>
                   {(props) => (
                     <div style={{ fontSize: '14px' }}>
