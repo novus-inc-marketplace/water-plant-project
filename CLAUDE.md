@@ -3,7 +3,7 @@
   "MONEY": "CLAUDE.md",
   "MVP_VERIFIED": true,
   "INIT_READY": true,
-  "TIMESTAMP": "2026-07-12T22:55:00Z",
+  "TIMESTAMP": "2026-07-14T11:45:00Z",
   "PROGRESS": {
     "project_structure": "COMPLETED",
     "directories_created": ["src/", "frontend/", "data/"],
@@ -26,15 +26,14 @@
     "bugfix_radarchart_import": "COMPLETED",
     "bugfix_export_excel_500": "COMPLETED",
     "bugfix_chart_cell_fill_crash": "COMPLETED",
-    "ui_modernization": "IN_PROGRESS",
-    "deployment_vercel": "PENDING",
+    "ui_modernization": "COMPLETED",
+    "deployment_render": "COMPLETED",
+    "deployment_vercel": "COMPLETED",
     "deployment_fly_io": "PENDING"
   },
   "NEXT_STEPS": [
-    "complete_ui_modernization",
-    "deployment_vercel",
     "deployment_fly_io"
   ],
-  "CURRENT_PHASE": "UI Modernization & Deployment"
+  "CURRENT_PHASE": "Deployment (Render + Vercel live; Fly.io pending)"
 }
 ```

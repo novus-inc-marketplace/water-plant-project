@@ -1,5 +1,19 @@
 # Water Quality Model Planning Progress
 
+## Deployment Status (as of 2026-07-14)
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Render (Docker) | LIVE | Multi-stage Dockerfile builds frontend (node:20) then serves backend + static via uvicorn. WeasyPrint system libs (pango/cairo/gdk-pixbuf) installed. |
+| Vercel (Frontend) | LIVE | Root `vercel.json` builds `frontend/` and proxies `/api/*` to Render. Framework Preset set to `Other`; `.vercelignore` excludes backend (`/src/`, `/requirements.txt`) so no Python serverless function is created. |
+| Fly.io | PENDING | `fly.toml` exists and reuses the same Dockerfile; not yet deployed/verified. |
+
+### Deployment fixes applied this session
+- `Dockerfile`: multi-stage build (node build -> python serve); copy built `dist` to `/app/frontend/static`; added WeasyPrint native libs (`libgdk-pixbuf-2.0-0` is the Debian 12 name).
+- `src/main.py`: serve `index.html` from `frontend/static`; mount `/assets` + `/static`; SPA catch-all route.
+- `vercel.json` (root): `buildCommand: "cd frontend && npm ci && npm run build"`, `outputDirectory: frontend/dist`, `/api` rewrite to Render backend.
+- `.vercelignore`: anchored backend-only exclusions (`/src/`, `/requirements.txt`, etc.) so `frontend/src` is preserved.
+- `frontend/index.html`: entry script uses `./src/main.tsx` (relative) so Vite build resolves it on Vercel.
+
 ## Remaining Needed Features
 | Feature/Action | Priority | Status   | Owner    | Notes |
 |----------------|----------|----------|----------|-------|
