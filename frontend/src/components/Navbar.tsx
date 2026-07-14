@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
+  const [open, setOpen] = useState(false);
 
   const navItems = [
     { path: '/', label: 'Dashboard' },
@@ -15,14 +16,28 @@ export const Navbar: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/">💧 Water Quality Treatment</Link>
+        <Link to="/" onClick={() => setOpen(false)}>
+          💧 Water Quality Treatment
+        </Link>
+        <button
+          type="button"
+          className="navbar-toggle"
+          aria-label="Toggle navigation menu"
+          aria-expanded={open}
+          onClick={() => setOpen(o => !o)}
+        >
+          <span className="bar" />
+          <span className="bar" />
+          <span className="bar" />
+        </button>
       </div>
-      <ul className="navbar-links">
+      <ul className={`navbar-links ${open ? 'open' : ''}`}>
         {navItems.map(item => (
           <li key={item.path}>
             <Link
               to={item.path}
               className={location.pathname === item.path ? 'active' : ''}
+              onClick={() => setOpen(false)}
             >
               {item.label}
             </Link>
