@@ -7,10 +7,11 @@ from typing import Optional, Any
 import json
 import os
 import sys
-from reports import generate_pdf_report, generate_excel_report
 
-# Add src to path for imports
+# Add src to path for imports BEFORE importing local modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from reports import generate_pdf_report, generate_excel_report
 
 # Import our modules
 from dosage_calculator import calculate_dosage, predict_water_quality
@@ -111,16 +112,15 @@ async def calculate_chemical_dosage(water_data: WaterQualityInput):
 async def serve_frontend():
     """Serve the frontend index.html"""
     base = os.path.dirname(os.path.dirname(__file__))
-    # Built frontend lives in frontend/static (copied from dist by Dockerfile)
-    index_path = os.path.join(base, "frontend", "static", "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, 'r') as f:
-            return HTMLResponse(content=f.read())
-    # Fallback: check for frontend/index.html (local dev)
-    index_path = os.path.join(base, "frontend", "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, 'r') as f:
-            return HTMLResponse(content=f.read())
+    # Built frontend lives in frontend/static (Docker) or frontend/dist (local)
+    for candidate in (
+        os.path.join(base, "frontend", "static", "index.html"),
+        os.path.join(base, "frontend", "dist", "index.html"),
+        os.path.join(base, "frontend", "index.html"),
+    ):
+        if os.path.exists(candidate):
+            with open(candidate, 'r') as f:
+                return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Water Quality Treatment Software</h1><p>API is running. Frontend not found.</p>")
 
 @app.get("/health")
@@ -129,8 +129,19 @@ async def health_check():
 
 # Mount static files
 _base = os.path.dirname(os.path.dirname(__file__))
-_static_dir = os.path.join(_base, "frontend", "static")
-if os.path.isdir(_static_dir):
+# In Docker the build copies dist -> frontend/static; locally the build
+# output lives in frontend/dist. Pick whichever actually has the assets.
+_static_dir = None
+for _candidate in (
+    os.path.join(_base, "frontend", "static"),
+    os.path.join(_base, "frontend", "dist"),
+):
+    if os.path.isdir(os.path.join(_candidate, "assets")) or os.path.exists(
+        os.path.join(_candidate, "index.html")
+    ):
+        _static_dir = _candidate
+        break
+if _static_dir:
     # Built assets are referenced as /assets/... in the HTML, so mount that too
     app.mount("/assets", StaticFiles(directory=os.path.join(_static_dir, "assets")), name="assets")
     app.mount("/static", StaticFiles(directory=_static_dir), name="static")
@@ -139,10 +150,14 @@ if os.path.isdir(_static_dir):
 @app.get("/{full_path:path}")
 async def spa_catch_all(full_path: str):
     """Catch-all for client-side routing (serves index.html)."""
-    index_path = os.path.join(_base, "frontend", "static", "index.html")
-    if os.path.exists(index_path):
-        with open(index_path, 'r') as f:
-            return HTMLResponse(content=f.read())
+    for candidate in (
+        os.path.join(_base, "frontend", "static", "index.html"),
+        os.path.join(_base, "frontend", "dist", "index.html"),
+        os.path.join(_base, "frontend", "index.html"),
+    ):
+        if os.path.exists(candidate):
+            with open(candidate, 'r') as f:
+                return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Water Quality Treatment Software</h1><p>API is running. Frontend not found.</p>")
 
 @app.get("/api/sample-data")
